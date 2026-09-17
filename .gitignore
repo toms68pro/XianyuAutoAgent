@@ -1,14 +1,18 @@
-# 环境变量文件（包含敏感信息）
-.env
-# 提示词文件
-*_prompt.txt
-# Python缓存文件
+# ==============================================================================
+# Xianyu AutoAgent Pro 2.0 - Git 忽略规则清单 (.gitignore)
+# ==============================================================================
+
+# 本地私密环境变量文件 (仅忽略私密定制文件，允许跟踪基础 .env 模板与 .env.example)
+.env.local
+*.local.env
+.env.*.local
+
+# Python 运行时与字节码缓存
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -24,31 +28,39 @@ var/
 .installed.cfg
 *.egg
 
-# 虚拟环境
+# 虚拟环境目录
 venv/
 ENV/
 env/
 .venv/
 
-# 日志文件
+# 日志输出文件
 logs/
 *.log
 
-# 数据库文件
+# 本地运行时 SQLite 数据库及事务文件 (生产推荐使用 PostgreSQL 18)
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+data/*.db-journal
 *.db
-*.sqlite3
 *.sqlite
+*.sqlite3
 
-# 其他临时文件
-.DS_Store
-.idea/
-.vscode/
-*.swp
-*.swo
+# 测试与代码覆盖率报告
 .coverage
 htmlcov/
 .pytest_cache/
 .tox/
 .nox/
 .hypothesis/
-.coverage.* 
+.coverage.*
+
+# 操作系统与 IDE 编辑器临时文件
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

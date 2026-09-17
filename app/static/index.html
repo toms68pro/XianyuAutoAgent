@@ -1,0 +1,2267 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xianyu AutoAgent Pro - 闲鱼智能客服矩阵工作台</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor / Font Awesome 6.7.2 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#eef2ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* 滚动条美化 */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased overflow-hidden select-none">
+
+  <!-- 顶部导航栏 -->
+  <header class="h-14 border-b border-slate-800 bg-slate-900/80 backdrop-blur px-4 flex items-center justify-between shrink-0">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
+        <i class="fa-solid fa-fish-fins"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-bold tracking-tight text-white text-base">Xianyu AutoAgent</span>
+          <span class="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">Pro 2.0</span>
+        </div>
+      </div>
+      <div class="h-4 w-px bg-slate-700 mx-2"></div>
+      <!-- 账号连接状态 -->
+      <div id="account-status-badge" class="flex items-center space-x-2 text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700/60">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="account-status-text">长连接正常 (AI值守中)</span>
+      </div>
+    </div>
+
+    <!-- 实时指标横幅 -->
+    <div class="hidden md:flex items-center space-x-6 text-xs text-slate-400">
+      <div class="flex items-center space-x-2">
+        <span>今日会话:</span>
+        <span id="stat-convs" class="font-semibold text-slate-200 text-sm">0</span>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span>AI 处理率:</span>
+        <span id="stat-ai-rate" class="font-semibold text-emerald-400 text-sm">--%</span>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span>议价协商中:</span>
+        <span id="stat-bargain" class="font-semibold text-amber-400 text-sm">0</span>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span>待审草稿:</span>
+        <span id="stat-drafts" class="font-semibold text-indigo-400 text-sm">0</span>
+      </div>
+    </div>
+
+    <!-- 右侧操作 -->
+    <div class="flex items-center space-x-2">
+      <button onclick="toggleSound()" id="sound-btn" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center space-x-1" title="提醒提示音开关">
+        <i id="sound-icon" class="fa-solid fa-volume-high text-emerald-400"></i>
+        <span id="sound-text" class="hidden sm:inline">提示音</span>
+      </button>
+      <button onclick="openModal('cards-modal')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center space-x-1.5">
+        <i class="fa-solid fa-key text-yellow-400"></i>
+        <span>卡密发货池</span>
+        <span id="card-badge" class="ml-1 px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 text-[10px]">0</span>
+      </button>
+      <button onclick="openModal('items-modal')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center space-x-1.5">
+        <i class="fa-solid fa-tags text-indigo-400"></i>
+        <span>商品底价库</span>
+      </button>
+      <button onclick="openModal('faq-modal')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center space-x-1.5">
+        <i class="fa-solid fa-book text-emerald-400"></i>
+        <span>RAG问答库</span>
+      </button>
+      <button onclick="openModal('order-rules-modal')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center space-x-1.5">
+        <i class="fa-solid fa-bolt text-purple-400"></i>
+        <span>自动履约</span>
+      </button>
+      <button onclick="openModal('accounts-modal')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center space-x-1.5">
+        <i class="fa-solid fa-store text-amber-400"></i>
+        <span>店铺设置</span>
+      </button>
+      <button onclick="location.reload()" title="刷新工作台" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 flex items-center justify-center transition border border-slate-700">
+        <i class="fa-solid fa-rotate"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 风控滑块紧急告警通知条 (当任何账号触发 RGV587 / captcha_required 时显示) -->
+  <div id="risk-alert-banner" class="hidden bg-amber-500/15 border-b border-amber-500/30 px-4 py-2 flex items-center justify-between text-xs text-amber-200 shrink-0">
+    <div class="flex items-center space-x-2.5">
+      <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span>
+      <i class="fa-solid fa-triangle-exclamation text-amber-400 text-sm"></i>
+      <span>【风控拦截警告】店铺账号 <span id="risk-acc-name" class="font-bold underline text-amber-300">--</span> 触发闲鱼滑块验证挑战 (RGV587)！</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <button onclick="openCaptchaModal()" class="px-3 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition flex items-center space-x-1 shadow">
+        <i class="fa-solid fa-shield text-xs"></i>
+        <span>立即辅助过盾</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 移动端视图切换导航条 (屏幕小于 lg 时自适应展示) -->
+  <nav id="mobile-nav" class="lg:hidden flex items-center justify-around border-b border-slate-800 bg-slate-900/90 py-2 px-3 text-xs shrink-0">
+    <button onclick="switchMobileTab('conversations')" id="tab-btn-convs" class="flex-1 py-1.5 text-center font-semibold rounded bg-slate-800 text-indigo-400 transition">
+      <i class="fa-regular fa-comments mr-1"></i>会话列表
+    </button>
+    <button onclick="switchMobileTab('chat')" id="tab-btn-chat" class="flex-1 py-1.5 text-center font-medium rounded text-slate-400 hover:text-slate-200 transition">
+      <i class="fa-solid fa-robot mr-1"></i>协同工作区
+    </button>
+    <button onclick="switchMobileTab('item')" id="tab-btn-item" class="flex-1 py-1.5 text-center font-medium rounded text-slate-400 hover:text-slate-200 transition">
+      <i class="fa-solid fa-shield-halved mr-1"></i>商品护栏
+    </button>
+  </nav>
+
+  <!-- 工作台主体三栏架构 -->
+  <main class="flex-1 flex overflow-hidden">
+    
+    <!-- 左栏: 会话列表面板 (320px) -->
+    <section id="col-conversations" class="w-full lg:w-80 border-r border-slate-800 bg-slate-900/40 flex flex-col shrink-0">
+      <!-- 搜索与状态过滤 -->
+      <div class="p-3 border-b border-slate-800 space-y-2">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+          <input id="search-input" type="text" placeholder="搜索买家或商品..." class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+        </div>
+        <!-- 标签页过滤 -->
+        <div class="flex items-center space-x-1 bg-slate-950 p-0.5 rounded-lg text-[11px] text-slate-400 border border-slate-800">
+          <button onclick="setFilter('')" class="filter-tab flex-1 py-1 rounded font-medium text-center bg-slate-800 text-slate-200">全部</button>
+          <button onclick="setFilter('auto')" class="filter-tab flex-1 py-1 rounded font-medium text-center hover:text-slate-200">托管</button>
+          <button onclick="setFilter('draft')" class="filter-tab flex-1 py-1 rounded font-medium text-center hover:text-slate-200">草稿</button>
+          <button onclick="setFilter('manual')" class="filter-tab flex-1 py-1 rounded font-medium text-center hover:text-slate-200">接管</button>
+          <button onclick="setFilter('bargain')" class="filter-tab flex-1 py-1 rounded font-medium text-center hover:text-slate-200">议价</button>
+        </div>
+      </div>
+
+      <!-- 会话流滚动容器 -->
+      <div id="conversation-list" class="flex-1 overflow-y-auto divide-y divide-slate-800/40">
+        <div class="p-8 text-center text-xs text-slate-500">
+          <i class="fa-solid fa-spinner fa-spin text-lg mb-2"></i>
+          <div>正在同步会话...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 中栏: 实时聊天流与人机协同交互区 (Flex-1) -->
+    <section id="col-chat" class="hidden lg:flex flex-1 flex flex-col bg-slate-950 overflow-hidden relative">
+      <!-- 聊天头部 -->
+      <div id="chat-header" class="h-14 border-b border-slate-800 bg-slate-900/30 px-4 flex items-center justify-between shrink-0">
+
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-slate-700 to-slate-800 flex items-center justify-center font-bold text-slate-200 text-sm border border-slate-700">
+            <i class="fa-regular fa-user"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span id="cur-buyer-name" class="font-medium text-slate-200 text-sm">选择左侧会话开始协同</span>
+              <span id="cur-intent-badge" class="hidden text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">议价中</span>
+            </div>
+            <div class="text-[11px] text-slate-400 flex items-center space-x-2">
+              <span id="cur-chat-id">ID: --</span>
+              <span class="text-slate-600">•</span>
+              <span id="cur-bargain-count">议价轮次: 0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <!-- 导出完整会话记录按钮 -->
+          <button onclick="copyConversationTranscript()" id="export-transcript-btn" class="hidden px-2.5 py-1 rounded-lg bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-700 font-medium text-xs transition items-center space-x-1" title="导出并复制当前会话记录">
+            <i class="fa-solid fa-copy text-indigo-400"></i>
+            <span>导出记录</span>
+          </button>
+
+          <!-- 一键改价按钮 -->
+          <button onclick="promptOneClickModifyPrice()" id="one-click-price-btn" class="hidden px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 font-semibold text-xs transition items-center space-x-1">
+            <i class="fa-solid fa-hand-holding-dollar"></i>
+            <span>一键改价成交</span>
+          </button>
+
+          <!-- 协同模式切换分段控制器 (Auto / Draft / Manual) -->
+          <div id="copilot-controls" class="hidden flex items-center space-x-1 bg-slate-900 p-1 rounded-lg border border-slate-800 text-xs">
+            <button onclick="changeCurrentMode('auto')" id="mode-btn-auto" class="px-2.5 py-1 rounded font-medium flex items-center space-x-1 transition">
+              <i class="fa-solid fa-robot text-emerald-400"></i>
+              <span>AI托管</span>
+            </button>
+            <button onclick="changeCurrentMode('draft')" id="mode-btn-draft" class="px-2.5 py-1 rounded font-medium flex items-center space-x-1 transition">
+              <i class="fa-solid fa-pen-ruler text-indigo-400"></i>
+              <span>草稿模式</span>
+            </button>
+            <button onclick="changeCurrentMode('manual')" id="mode-btn-manual" class="px-2.5 py-1 rounded font-medium flex items-center space-x-1 transition">
+              <i class="fa-solid fa-user-shield text-amber-400"></i>
+              <span>人工接管</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 消息气泡流容器 -->
+      <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-4">
+        <div class="h-full flex flex-col items-center justify-center text-slate-600 space-y-3">
+          <i class="fa-regular fa-comments text-4xl opacity-40"></i>
+          <p class="text-xs">请在左侧列表中点击买家，查看对话流与 AI 思考决策过程</p>
+        </div>
+      </div>
+
+      <!-- 快捷话术与输入控制栏 -->
+      <div id="chat-input-panel" class="hidden border-t border-slate-800 bg-slate-900/60 p-3 space-y-2">
+        <!-- 快捷话术抽屉面板 -->
+        <div id="canned-drawer" class="hidden bg-slate-950 p-2.5 rounded-lg border border-slate-800 space-y-2 text-xs">
+          <div class="flex items-center justify-between text-slate-400 text-[11px] pb-1 border-b border-slate-800">
+            <span class="font-semibold text-slate-200 flex items-center space-x-1">
+              <i class="fa-solid fa-list-check text-indigo-400 mr-1"></i>
+              <span>快捷话术库 (点击直接填入)</span>
+            </span>
+            <div class="flex items-center space-x-2">
+              <button onclick="toggleAddCannedForm()" class="text-indigo-400 hover:text-indigo-300 font-medium text-[11px] flex items-center space-x-0.5">
+                <i class="fa-solid fa-plus text-[10px]"></i><span>新建话术</span>
+              </button>
+              <button onclick="toggleCannedDrawer()" class="hover:text-slate-200"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </div>
+          <!-- 新建自定义话术表单 -->
+          <div id="add-canned-form" class="hidden p-2 rounded bg-slate-900 border border-slate-800 space-y-1.5">
+            <div class="flex space-x-1.5">
+              <input id="new-canned-title" type="text" placeholder="简称 (如: 🚚顺丰特快)" class="w-32 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200 text-[11px] focus:outline-none focus:border-indigo-500">
+              <input id="new-canned-content" type="text" placeholder="话术完整回复内容..." class="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200 text-[11px] focus:outline-none focus:border-indigo-500">
+              <button onclick="submitNewCannedReply()" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-medium text-[11px] shrink-0">保存</button>
+            </div>
+          </div>
+          <!-- 动态话术列表容器 -->
+          <div id="canned-list-container" class="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto">
+            <div class="text-slate-500 text-center py-4 col-span-2">加载常用话术...</div>
+          </div>
+        </div>
+
+        <!-- 顶部快捷话术按钮栏 (动态加载) -->
+        <div id="quick-reply-bar" class="flex items-center space-x-2 overflow-x-auto pb-1 text-xs">
+          <span class="text-slate-500 text-[11px] shrink-0"><i class="fa-solid fa-bolt mr-1"></i>快捷回复:</span>
+          <div id="quick-bar-items" class="flex items-center space-x-1.5"></div>
+        </div>
+
+        <!-- 输入框与发送按钮 -->
+        <div class="flex items-end space-x-2">
+          <div class="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2 focus-within:border-indigo-500 transition">
+            <textarea id="message-textarea" rows="2" placeholder="输入回复内容 (回车发送，将自动记录为卖家插话并切换人工接管)..." class="w-full bg-transparent text-xs text-slate-100 placeholder-slate-500 resize-none focus:outline-none"></textarea>
+          </div>
+          <button onclick="toggleCannedDrawer()" class="h-12 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700 flex items-center space-x-1 shrink-0" title="常用话术库">
+            <i class="fa-solid fa-book-open text-indigo-400"></i>
+            <span>话术</span>
+          </button>
+          <button onclick="sendSellerMessage()" class="h-12 px-5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center space-x-1.5 shadow-lg shadow-indigo-600/20 transition shrink-0">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>发送</span>
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 右栏: 商品画像与确定性价格护栏面板 (340px) -->
+    <section id="col-item" class="hidden lg:flex w-full lg:w-80 border-l border-slate-800 bg-slate-900/30 flex flex-col shrink-0 overflow-y-auto">
+
+      <div class="p-4 border-b border-slate-800">
+        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+          <i class="fa-solid fa-shield-halved text-indigo-400"></i>
+          <span>商品画像与价格护栏配置</span>
+        </h3>
+      </div>
+
+      <div class="p-4 space-y-4 text-xs">
+        <!-- 商品卡片 -->
+        <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
+          <div class="flex items-start justify-between">
+            <span id="item-title" class="font-medium text-slate-200 line-clamp-2">未关联商品</span>
+            <span id="item-price" class="text-amber-400 font-bold text-sm shrink-0 ml-2">¥--</span>
+          </div>
+          <p id="item-desc" class="text-slate-400 text-[11px] line-clamp-3">暂无商品详情描述</p>
+          <div class="pt-1 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-800/60">
+            <span>商品ID: <span id="item-id-label">--</span></span>
+            <button onclick="syncCurrentItem()" class="text-indigo-400 hover:underline"><i class="fa-solid fa-arrows-rotate mr-1"></i>从闲鱼同步</button>
+          </div>
+        </div>
+
+        <!-- 价格护栏表单 (确定性规则硬拦截) -->
+        <div class="space-y-3 bg-slate-900/60 p-3.5 rounded-lg border border-slate-800">
+          <div class="font-semibold text-slate-200 flex items-center justify-between">
+            <span>🛡️ 确定性守价规则 (100% 规则守卫)</span>
+          </div>
+          
+          <div class="space-y-1">
+            <label class="text-[11px] text-slate-400">绝对守价底线 (不可突破的最低成交价)</label>
+            <div class="relative">
+              <span class="absolute left-2.5 top-1.5 text-slate-500">¥</span>
+              <input id="input-min-price" type="number" step="0.1" class="w-full bg-slate-950 border border-slate-700/80 rounded-md pl-6 pr-2 py-1 text-slate-100 text-xs focus:outline-none focus:border-indigo-500">
+            </div>
+            <p class="text-[10px] text-slate-500">任何大模型回复均被严格限制不得低于此数值</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div class="space-y-1">
+              <label class="text-[11px] text-slate-400">单轮最大让步 (¥)</label>
+              <input id="input-step-discount" type="number" class="w-full bg-slate-950 border border-slate-700/80 rounded-md px-2 py-1 text-slate-100 text-xs focus:outline-none focus:border-indigo-500">
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] text-slate-400">最大议价轮次</label>
+              <input id="input-max-rounds" type="number" class="w-full bg-slate-950 border border-slate-700/80 rounded-md px-2 py-1 text-slate-100 text-xs focus:outline-none focus:border-indigo-500">
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-[11px] text-slate-400">赠品/附加服务让步话术</label>
+            <input id="input-gift-desc" type="text" placeholder="例如：包顺丰 / 送原装配件" class="w-full bg-slate-950 border border-slate-700/80 rounded-md px-2 py-1 text-slate-100 text-xs focus:outline-none focus:border-indigo-500">
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-[11px] text-slate-400">商品专业参数 / 成色补充 (RAG知识库)</label>
+            <textarea id="input-tech-specs" rows="3" placeholder="录入成色细节、瑕疵说明、配件清单等..." class="w-full bg-slate-950 border border-slate-700/80 rounded-md p-2 text-slate-100 text-xs focus:outline-none focus:border-indigo-500 resize-none"></textarea>
+          </div>
+
+          <button onclick="saveItemGuardrail()" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md font-medium text-xs shadow transition">
+            保存商品策略配置
+          </button>
+        </div>
+
+        <!-- 买家情绪与信用雷达 -->
+        <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
+          <div class="font-semibold text-slate-300 text-[11px] flex items-center justify-between">
+            <span>买家信用与意向雷达</span>
+            <span id="radar-sentiment-badge" class="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]">成交意向高</span>
+          </div>
+          <div class="space-y-1 text-[11px] text-slate-400">
+            <div class="flex justify-between"><span>历史协商议价:</span><span id="radar-bargain-count" class="text-slate-200">0 轮</span></div>
+            <div class="flex justify-between"><span>主要意图类别:</span><span id="radar-latest-intent" class="text-indigo-300">--</span></div>
+            <div class="flex justify-between"><span>买家情绪意向:</span><span id="radar-sentiment-text" class="text-emerald-400 font-medium">成交意向高</span></div>
+            <div class="flex justify-between"><span>风控风险评级:</span><span class="text-emerald-400">极低 (正常买家)</span></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- 店铺设置与账号矩阵模态框 -->
+  <div id="accounts-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-5 space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
+        <h3 class="font-bold text-slate-100 text-sm flex items-center space-x-2">
+          <i class="fa-solid fa-store text-amber-400"></i>
+          <span>闲鱼店铺账号矩阵与网络代理管理</span>
+        </h3>
+        <button onclick="closeModal('accounts-modal')" class="text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- 账号列表区域 -->
+      <div class="flex-1 overflow-y-auto space-y-2 text-xs pr-1">
+        <div class="flex items-center justify-between text-slate-400 text-[11px] pb-1 border-b border-slate-800">
+          <span>已接入矩阵账号列表</span>
+          <span class="text-slate-500">支持每个账号独立住宅代理与风控隔离</span>
+        </div>
+        <div id="accounts-modal-list" class="space-y-2">
+          <div class="text-slate-500 text-center py-6"><i class="fa-solid fa-spinner fa-spin mr-1"></i>加载店铺账号...</div>
+        </div>
+      </div>
+
+      <!-- 添加/更新账号表单 -->
+      <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2.5 text-xs shrink-0">
+        <div class="font-semibold text-slate-200 flex items-center space-x-1.5">
+          <i class="fa-solid fa-plus text-indigo-400"></i>
+          <span>接入新店铺 / 更新凭据</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label class="text-slate-400 block mb-1">店铺显示别名</label>
+            <input id="acc-nickname" type="text" placeholder="例如: 闲鱼主店-数码馆" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="text-slate-400 block mb-1">独立网络代理 (可选，支持 http:// 或 socks5://)</label>
+            <input id="acc-proxy" type="text" placeholder="例如: http://user:pass@12.34.56.78:7890" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono text-[11px] focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+        <div>
+          <label class="text-slate-400 block mb-1">完整 Cookie 字符串 (从浏览器 F12 网络请求中复制)</label>
+          <textarea id="acc-cookie" rows="3" placeholder="粘贴含 unb, _m_h5_tk, cookie2 等关键字段的 Cookie..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 resize-none font-mono text-[11px] focus:outline-none focus:border-indigo-500"></textarea>
+        </div>
+        <div class="flex justify-end space-x-2 pt-1">
+          <button onclick="closeModal('accounts-modal')" class="px-4 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs">取消</button>
+          <button onclick="saveAccount()" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center space-x-1.5 shadow">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>保存并建立长连接</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 闲鱼滑块风控拼图辅助过盾模态框 -->
+  <div id="captcha-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+    <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-base">
+            <i class="fa-solid fa-puzzle-piece"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-100 text-sm">闲鱼 RGV587 滑块验证挑战辅助</h3>
+            <p class="text-[11px] text-slate-400">快速解除闲鱼反爬机房盾，恢复 7x24h 自动客服值守</p>
+          </div>
+        </div>
+        <button onclick="closeModal('captcha-modal')" class="text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="space-y-3.5 text-xs">
+        <div class="p-3 rounded-lg bg-amber-950/30 border border-amber-500/30 text-amber-200/90 leading-relaxed">
+          <div class="font-semibold text-amber-300 mb-1 flex items-center space-x-1.5">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span>为何会出现此挑战？</span>
+          </div>
+          闲鱼风控系统检测到店铺并发请求或 IP 环境波动，要求进行一次人机拼图滑动。您只需在官方页面完成拼图即可立即解除。
+        </div>
+
+        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2">
+          <div class="text-slate-400 flex justify-between">
+            <span>受影响店铺账号:</span>
+            <span id="captcha-target-acc" class="font-semibold text-slate-200">--</span>
+          </div>
+          <div class="text-slate-400 flex justify-between">
+            <span>风控状态:</span>
+            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold text-[10px]">RGV587 滑块待验证</span>
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-1">
+          <a id="captcha-jump-link" href="#" target="_blank" class="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-lg transition flex items-center justify-center space-x-2 shadow-lg shadow-amber-500/10">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            <span>步骤 1: 点击打开闲鱼官方验证页面 (在新窗口中滑动拼图)</span>
+          </a>
+          <button onclick="verifyCaptchaResolution()" id="captcha-verify-btn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/20">
+            <i class="fa-solid fa-rotate-right"></i>
+            <span>步骤 2: 我已完成滑块拼图，立即复查并恢复长连接</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RAG 知识库检索模拟测试器模态框 -->
+  <div id="faq-test-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-5 space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
+        <h3 class="font-bold text-slate-100 text-sm flex items-center space-x-2">
+          <i class="fa-solid fa-flask-vial text-indigo-400"></i>
+          <span>RAG 知识库混合检索与置信度模拟器</span>
+        </h3>
+        <button onclick="closeModal('faq-test-modal')" class="text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-3 text-xs shrink-0">
+        <div class="flex space-x-2">
+          <input id="rag-test-input" type="text" placeholder="输入买家可能提出的长尾问题，如: 顺丰能包邮吗？什么时候能发货？" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-indigo-500">
+          <button onclick="runRagSimulation()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg shrink-0 flex items-center space-x-1 shadow">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span>测试检索</span>
+          </button>
+        </div>
+        <!-- 快捷测试示例 -->
+        <div class="flex flex-wrap gap-1.5 text-[11px] text-slate-400">
+          <span>快捷示例:</span>
+          <button onclick="fillRagTest('什么时候发货呀？今天能发顺丰不？')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">顺丰当天发货</button>
+          <button onclick="fillRagTest('Mac苹果电脑可以用吗？免驱动吗？')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">苹果电脑兼容性</button>
+          <button onclick="fillRagTest('老板诚心要，能不能再少点便宜点啊？')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">大砍刀议价</button>
+          <button onclick="fillRagTest('成色怎么样？有暗病划痕或者拆修过吗？')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">成色与暗病</button>
+        </div>
+      </div>
+      <!-- 模拟检索结果区域 -->
+      <div id="rag-test-result" class="flex-1 overflow-y-auto space-y-3 text-xs bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+        <div class="text-slate-500 text-center py-8">输入买家问题并点击“测试检索”，查看分词、BM25 得分与提示词注入上下文</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 全屏图片灯箱预览器 -->
+  <div id="image-lightbox" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition-all" onclick="closeLightbox(event)">
+    <div class="relative max-w-4xl max-h-[90vh] flex flex-col items-center" onclick="event.stopPropagation()">
+      <div class="absolute -top-10 right-0 flex items-center space-x-3 text-white text-sm">
+        <button onclick="zoomLightbox(0.2)" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition" title="放大"><i class="fa-solid fa-plus"></i></button>
+        <button onclick="zoomLightbox(-0.2)" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition" title="缩小"><i class="fa-solid fa-minus"></i></button>
+        <button onclick="resetLightboxZoom()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition" title="重置比例"><i class="fa-solid fa-compress"></i></button>
+        <button onclick="closeLightbox()" class="w-8 h-8 rounded-full bg-rose-600 hover:bg-rose-500 flex items-center justify-center transition" title="关闭"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <img id="lightbox-img" src="" alt="商品与细节原图" class="max-w-full max-h-[85vh] rounded-lg shadow-2xl object-contain transition-transform duration-200">
+    </div>
+  </div>
+
+  <!-- 商品库模态框 -->
+  <div id="items-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-5 space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-slate-100 text-sm">商品守价策略库</h3>
+        <button onclick="closeModal('items-modal')" class="text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="items-modal-list" class="flex-1 overflow-y-auto divide-y divide-slate-800 space-y-2 text-xs">
+        <div class="text-slate-500 text-center py-6">加载中...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RAG 知识库管理模态框 -->
+  <div id="faq-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-5 space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-slate-100 text-sm flex items-center space-x-2">
+          <i class="fa-solid fa-book text-emerald-400"></i>
+          <span>RAG 电商问答知识库管理</span>
+        </h3>
+        <div class="flex items-center space-x-2">
+          <button onclick="openModal('faq-test-modal')" class="px-2.5 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 text-xs font-semibold flex items-center space-x-1 transition">
+            <i class="fa-solid fa-flask-vial"></i>
+            <span>检索模拟测试</span>
+          </button>
+          <button onclick="closeModal('faq-modal')" class="text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+      <!-- 添加问答表单 -->
+      <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2.5 text-xs">
+        <div class="font-semibold text-slate-200">➕ 添加常见问答 (智能语义匹配买家咨询)</div>
+        <div>
+          <input id="faq-new-q" type="text" placeholder="常见买家问题 (例如: 支持苹果电脑吗？/ 什么时候发货？)" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-slate-100 focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <textarea id="faq-new-a" rows="2" placeholder="官方标准答复内容..." class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-slate-100 focus:outline-none focus:border-indigo-500 resize-none"></textarea>
+        </div>
+        <div class="flex items-center space-x-2">
+          <input id="faq-new-kw" type="text" placeholder="匹配标签/关键词 (以逗号分隔，如: 苹果,Mac,兼容,驱动)" class="flex-1 bg-slate-900 border border-slate-700 rounded p-1.5 text-slate-100 text-[11px] focus:outline-none focus:border-indigo-500">
+          <button onclick="addNewFaq()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-medium text-xs transition shrink-0">添加条目</button>
+        </div>
+      </div>
+      <!-- 问答列表容器 -->
+      <div id="faq-modal-list" class="flex-1 overflow-y-auto divide-y divide-slate-800 space-y-2 text-xs">
+        <div class="text-slate-500 text-center py-6">正在加载知识库...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 自动发货与履约规则模态框 -->
+  <div id="order-rules-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-5 space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-slate-100 text-sm flex items-center space-x-2">
+          <i class="fa-solid fa-bolt text-purple-400"></i>
+          <span>订单全自动履约与发货规则配置</span>
+        </h3>
+        <button onclick="closeModal('order-rules-modal')" class="text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <!-- 添加发货规则表单 -->
+      <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2.5 text-xs">
+        <div class="font-semibold text-slate-200">➕ 新建自动化发货/催付规则</div>
+        <div class="flex items-center space-x-2">
+          <label class="text-slate-400 shrink-0">触发事件:</label>
+          <select id="rule-new-event" class="bg-slate-900 border border-slate-700 rounded p-1 text-slate-200 text-xs">
+            <option value="等待卖家发货">付款成功 (等待卖家发货) -> 自动发货卡密/链接</option>
+            <option value="等待买家付款">拍下未付款 (等待买家付款) -> 自动温馨催付</option>
+          </select>
+        </div>
+        <div>
+          <textarea id="rule-new-content" rows="3" placeholder="自动发送内容 (例如: 感谢老板支持！网盘下载链接: https://... 提取码: 8888，自动发货完毕~)" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-slate-100 focus:outline-none focus:border-indigo-500 resize-none font-mono text-[11px]"></textarea>
+        </div>
+        <div class="flex justify-end">
+          <button onclick="addNewOrderRule()" class="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded font-medium text-xs transition">保存自动化规则</button>
+        </div>
+      </div>
+      <!-- 规则列表容器 -->
+      <div id="order-rules-list" class="flex-1 overflow-y-auto divide-y divide-slate-800 space-y-2 text-xs">
+        <div class="text-slate-500 text-center py-6">加载规则中...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 卡密发货池模态框 -->
+  <div id="cards-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-5 space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-slate-100 text-sm flex items-center space-x-2">
+          <i class="fa-solid fa-key text-yellow-400"></i>
+          <span>一卡一密虚拟资产库存与发货池</span>
+        </h3>
+        <button onclick="closeModal('cards-modal')" class="text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- 批量导入卡密 -->
+      <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2.5 text-xs">
+        <div class="font-semibold text-slate-200 flex items-center justify-between">
+          <span>➕ 批量入库卡密 / 激活码 / 网盘提取链接</span>
+          <span class="text-[11px] text-slate-400 font-normal">每行一条，自动去重</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <label class="text-slate-400 shrink-0">关联商品ID (可选):</label>
+          <input id="card-new-item-id" type="text" placeholder="留空则为全店通用卡密" class="flex-1 bg-slate-900 border border-slate-700 rounded p-1.5 text-slate-100 text-xs focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <textarea id="card-batch-codes" rows="3" placeholder="粘贴多行卡密信息，例如：&#10;KEY-ABCD-1234-5678&#10;KEY-WXYZ-8765-4321&#10;百度网盘: https://pan.baidu.com/s/xxx 提取码: 6666" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100 text-xs font-mono resize-none focus:outline-none focus:border-indigo-500"></textarea>
+        </div>
+        <div class="flex justify-between items-center pt-1">
+          <div class="text-[11px] text-slate-400" id="card-modal-stats">库存统计: 待查询</div>
+          <button onclick="submitBatchCards()" class="px-4 py-1.5 bg-yellow-600 hover:bg-yellow-500 text-slate-950 font-bold rounded text-xs transition shadow">批量导入入库</button>
+        </div>
+      </div>
+
+      <!-- 状态筛选 -->
+      <div class="flex items-center space-x-2 text-xs">
+        <button onclick="filterCardsModal('')" id="card-tab-all" class="card-filter-btn px-2.5 py-1 rounded bg-slate-800 text-slate-200 font-medium">全部</button>
+        <button onclick="filterCardsModal('available')" id="card-tab-avail" class="card-filter-btn px-2.5 py-1 rounded text-slate-400 hover:text-slate-200">待发放 (库存)</button>
+        <button onclick="filterCardsModal('used')" id="card-tab-used" class="card-filter-btn px-2.5 py-1 rounded text-slate-400 hover:text-slate-200">已发放出库</button>
+      </div>
+
+      <!-- 卡密列表容器 -->
+      <div id="cards-modal-list" class="flex-1 overflow-y-auto divide-y divide-slate-800 space-y-2 text-xs">
+        <div class="text-slate-500 text-center py-6">正在加载卡密库...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 真实改价模态框 -->
+  <div id="modify-price-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-slate-100 text-sm flex items-center space-x-1.5">
+          <i class="fa-solid fa-hand-holding-dollar text-amber-400"></i>
+          <span>一键改价成交闭环</span>
+        </h3>
+        <button onclick="closeModal('modify-price-modal')" class="text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div class="p-2.5 rounded bg-slate-950 border border-slate-800 space-y-1">
+          <div class="text-slate-400 text-[11px]">当前咨询商品</div>
+          <div id="mod-price-item-title" class="font-medium text-slate-200 truncate">未关联商品</div>
+          <div class="text-slate-400 text-[11px]">当前标价: <span id="mod-price-current-val" class="text-amber-400 font-semibold">¥--</span></div>
+        </div>
+        <div class="space-y-1">
+          <label class="text-slate-400">协商成交目标价 (¥)</label>
+          <input id="mod-price-target-val" type="number" step="0.1" placeholder="输入谈拢的成交价格" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-slate-100 text-sm font-bold focus:outline-none focus:border-amber-500">
+        </div>
+        <div class="flex items-center space-x-2 text-[11px] text-slate-300">
+          <input id="mod-price-update-item" type="checkbox" checked class="rounded bg-slate-800 text-indigo-600 focus:ring-0">
+          <label for="mod-price-update-item">联动调用闲鱼 MTOP 真实修改商品挂牌标价</label>
+        </div>
+        <div class="flex items-center space-x-2 text-[11px] text-slate-300">
+          <input id="mod-price-notify-buyer" type="checkbox" checked class="rounded bg-slate-800 text-indigo-600 focus:ring-0">
+          <label for="mod-price-notify-buyer">下发消息告知买家已改好价，引导立即支付</label>
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="closeModal('modify-price-modal')" class="px-4 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs">取消</button>
+        <button onclick="submitOneClickModifyPrice()" id="mod-price-submit-btn" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow transition">确认改价并下发生效</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 前端核心交互逻辑 -->
+
+  <script>
+    let activeChatId = null;
+    let currentConversation = null;
+    let currentItem = null;
+    let conversations = [];
+    let currentFilter = '';
+    let soundEnabled = true;
+
+    // 工业级安全防线：彻底消除 DOM-based XSS 漏洞
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // 声音提示功能 (Web Audio API 原生合成清脆和弦音，零外部资源依赖)
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const icon = document.getElementById('sound-icon');
+      const text = document.getElementById('sound-text');
+      if (soundEnabled) {
+        icon.className = 'fa-solid fa-volume-high text-emerald-400';
+        if (text) text.innerText = '提示音:开';
+        playNotificationSound('msg');
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+        if (text) text.innerText = '提示音:关';
+      }
+    }
+
+    function playNotificationSound(type = 'msg') {
+      if (!soundEnabled) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        const now = ctx.currentTime;
+        if (type === 'draft') {
+          osc.frequency.setValueAtTime(587.33, now); // D5
+          osc.frequency.setValueAtTime(880, now + 0.08); // A5
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else {
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        }
+      } catch (e) {}
+    }
+
+    // 桌面系统级通知 (Web Notification API)
+    function requestNotificationPermission() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+
+    function sendDesktopNotification(title, body) {
+      if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+        try {
+          new Notification(title, { body: body });
+        } catch (e) {}
+      }
+    }
+
+    // 移动端多视图切换控制器
+    function switchMobileTab(tab) {
+      const colConvs = document.getElementById('col-conversations');
+      const colChat = document.getElementById('col-chat');
+      const colItem = document.getElementById('col-item');
+
+      const btnConvs = document.getElementById('tab-btn-convs');
+      const btnChat = document.getElementById('tab-btn-chat');
+      const btnItem = document.getElementById('tab-btn-item');
+
+      const activeCls = 'flex-1 py-1.5 text-center font-semibold rounded bg-slate-800 text-indigo-400 transition';
+      const inactiveCls = 'flex-1 py-1.5 text-center font-medium rounded text-slate-400 hover:text-slate-200 transition';
+
+      if (btnConvs) btnConvs.className = tab === 'conversations' ? activeCls : inactiveCls;
+      if (btnChat) btnChat.className = tab === 'chat' ? activeCls : inactiveCls;
+      if (btnItem) btnItem.className = tab === 'item' ? activeCls : inactiveCls;
+
+      if (colConvs && colChat && colItem) {
+        if (tab === 'conversations') {
+          colConvs.classList.remove('hidden');
+          colChat.classList.add('hidden');
+          colItem.classList.add('hidden');
+        } else if (tab === 'chat') {
+          colConvs.classList.add('hidden');
+          colChat.classList.remove('hidden');
+          colItem.classList.add('hidden');
+        } else if (tab === 'item') {
+          colConvs.classList.add('hidden');
+          colChat.classList.add('hidden');
+          colItem.classList.remove('hidden');
+        }
+      }
+    }
+
+    // 初始化加载
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchConversations();
+      fetchDashboardStats();
+      initSSE();
+      requestNotificationPermission();
+      loadCannedReplies();
+
+      // 定时轮询统计
+      setInterval(fetchDashboardStats, 10000);
+
+      // 回车快捷发送
+      document.getElementById('message-textarea').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendSellerMessage();
+        }
+      });
+
+      // 搜索过滤监听
+      document.getElementById('search-input').addEventListener('input', (e) => {
+        renderConversations();
+      });
+    });
+
+    // 初始化 SSE 实时长连接
+    function initSSE() {
+      const evtSource = new EventSource('/api/sse');
+      
+      evtSource.addEventListener('message_received', (e) => {
+        const data = JSON.parse(e.data);
+        handleIncomingSSEMessage(data);
+      });
+
+      evtSource.addEventListener('message_sent', (e) => {
+        const data = JSON.parse(e.data);
+        handleSentSSEMessage(data);
+      });
+
+      evtSource.addEventListener('draft_ready', (e) => {
+        const data = JSON.parse(e.data);
+        handleDraftReady(data);
+      });
+
+      evtSource.addEventListener('account_status', (e) => {
+        const data = JSON.parse(e.data);
+        updateAccountStatus(data);
+      });
+
+      evtSource.addEventListener('account_risk', (e) => {
+        const data = JSON.parse(e.data);
+        handleAccountRisk(data);
+      });
+
+      evtSource.onerror = () => {
+        document.getElementById('account-status-text').innerText = '实时通道重连中...';
+      };
+    }
+
+    // AI 思考中打字动效指示器
+    function showTypingIndicator() {
+      removeTypingIndicator();
+      const container = document.getElementById('messages-container');
+      if (!container) return;
+      const indicatorHtml = `
+        <div id="ai-typing-indicator" class="flex items-center space-x-2 text-slate-400 text-xs py-2 px-3 bg-slate-900/60 rounded-xl max-w-fit border border-slate-800 animate-pulse">
+          <i class="fa-solid fa-robot text-indigo-400"></i>
+          <span>AI 思考决策中</span>
+          <span class="flex space-x-1 ml-1">
+            <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></span>
+            <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+            <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+          </span>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', indicatorHtml);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      const el = document.getElementById('ai-typing-indicator');
+      if (el) el.remove();
+    }
+
+    // 处理新收到的买家消息
+    function handleIncomingSSEMessage(data) {
+      fetchConversations();
+      fetchDashboardStats();
+      playNotificationSound('msg');
+      sendDesktopNotification('闲鱼新消息进线', `${data.buyer_name || '买家'}: ${data.content}`);
+
+      if (activeChatId === data.chat_id) {
+        appendMessageBubble({
+          role: 'user',
+          content: data.content,
+          timestamp: data.timestamp
+        });
+        if (currentConversation && currentConversation.copilot_mode !== 'manual') {
+          showTypingIndicator();
+        }
+      }
+    }
+
+    // 处理已发出的消息
+    function handleSentSSEMessage(data) {
+      fetchConversations();
+      fetchDashboardStats();
+      if (activeChatId === data.chat_id) {
+        removeTypingIndicator();
+        appendMessageBubble({
+          role: data.role,
+          content: data.content,
+          intent: data.intent,
+          ai_thinking: data.thinking,
+          timestamp: data.timestamp
+        });
+      }
+    }
+
+    // 处理 AI 草稿待审批
+    function handleDraftReady(data) {
+      fetchConversations();
+      fetchDashboardStats();
+      playNotificationSound('draft');
+      sendDesktopNotification('🤖 AI 建议回复草稿待确认', data.content);
+
+      if (activeChatId === data.chat_id) {
+        removeTypingIndicator();
+        appendDraftBubble(data);
+      }
+    }
+
+
+    // 更新账号连接状态横幅
+    function updateAccountStatus(data) {
+      const badge = document.getElementById('account-status-badge');
+      const text = document.getElementById('account-status-text');
+      if (data.status === 'online') {
+        badge.className = 'flex items-center space-x-2 text-xs px-2.5 py-1 rounded-full bg-emerald-950/60 text-emerald-300 border border-emerald-800/60';
+        badge.firstElementChild.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+        text.innerText = '长连接正常 (AI值守中)';
+        hideRiskBanner();
+      } else if (data.status === 'captcha_required') {
+        badge.className = 'flex items-center space-x-2 text-xs px-2.5 py-1 rounded-full bg-amber-950/60 text-amber-300 border border-amber-800/60';
+        badge.firstElementChild.className = 'w-2 h-2 rounded-full bg-amber-400 animate-bounce';
+        text.innerText = '⚠️ 需过滑块验证 (点击辅助过盾)';
+        handleAccountRisk(data);
+      } else {
+        badge.className = 'flex items-center space-x-2 text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700';
+        badge.firstElementChild.className = 'w-2 h-2 rounded-full bg-slate-500';
+        text.innerText = data.message || '连接就绪';
+      }
+    }
+
+    // 获取会话列表
+    async function fetchConversations() {
+      try {
+        const res = await fetch(`/api/conversations${currentFilter ? '?status=' + currentFilter : ''}`);
+        conversations = await res.json();
+        renderConversations();
+      } catch (err) {
+        console.error("加载会话失败:", err);
+      }
+    }
+
+    // 渲染会话列表 (带 XSS 安全转义与状态标识)
+    function renderConversations() {
+      const container = document.getElementById('conversation-list');
+      const search = document.getElementById('search-input').value.toLowerCase();
+      
+      const filtered = conversations.filter(c => {
+        if (!search) return true;
+        const name = (c.buyer_name || '').toLowerCase();
+        const cid = (c.chat_id || '').toLowerCase();
+        return name.includes(search) || cid.includes(search);
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-xs text-slate-500">暂无相关会话</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(c => {
+        const isActive = c.chat_id === activeChatId;
+        const modeColor = c.copilot_mode === 'auto' ? 'text-emerald-400 bg-emerald-500/10' : (c.copilot_mode === 'draft' ? 'text-indigo-400 bg-indigo-500/10' : 'text-amber-400 bg-amber-500/10');
+        const modeLabel = c.copilot_mode === 'auto' ? '托管' : (c.copilot_mode === 'draft' ? '草稿' : '接管');
+        const timeStr = c.last_message_at ? new Date(c.last_message_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+        const safeName = escapeHtml(c.buyer_name || '买家');
+        const safeIntent = escapeHtml(c.latest_intent || '咨询中');
+
+        let sentimentTag = '';
+        if (c.buyer_sentiment === 'urgent') {
+          sentimentTag = `<span class="text-[10px] px-1 py-0.5 rounded bg-rose-500/20 text-rose-400 font-bold flex items-center shrink-0"><i class="fa-solid fa-fire text-[9px] mr-0.5"></i>加急</span>`;
+        } else if (c.buyer_sentiment === 'positive') {
+          sentimentTag = `<span class="text-[10px] px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-medium shrink-0">⭐意向高</span>`;
+        } else if (c.buyer_sentiment === 'negative') {
+          sentimentTag = `<span class="text-[10px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400 font-medium shrink-0">⚠️敏感</span>`;
+        }
+
+        return `
+          <div onclick="selectConversation('${escapeHtml(c.chat_id)}')" class="p-3 cursor-pointer transition flex items-start space-x-3 ${isActive ? 'bg-indigo-950/30 border-l-2 border-indigo-500' : 'hover:bg-slate-800/40'}">
+            <div class="relative">
+              <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-slate-700 to-slate-800 flex items-center justify-center font-bold text-slate-200 text-xs border border-slate-700">
+                ${safeName ? safeName.slice(0, 1) : '买'}
+              </div>
+              ${c.unread_count > 0 ? `<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-[10px] text-white flex items-center justify-center font-bold">${c.unread_count}</span>` : ''}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-medium text-slate-200 text-xs truncate">${safeName}</span>
+                <span class="text-[10px] text-slate-500">${timeStr}</span>
+              </div>
+              <div class="flex items-center space-x-1.5">
+                <span class="text-[10px] px-1.5 py-0.5 rounded font-medium ${modeColor}">${modeLabel}</span>
+                ${sentimentTag}
+                ${c.bargain_count > 0 ? `<span class="text-[10px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400 font-medium">议价x${c.bargain_count}</span>` : ''}
+                <span class="text-[11px] text-slate-500 truncate flex-1">${safeIntent}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 选中会话 (支持移动端自动切至聊天视图)
+    async function selectConversation(chatId) {
+      activeChatId = chatId;
+      currentConversation = conversations.find(c => c.chat_id === chatId);
+      renderConversations();
+
+      // 更新顶部与输入栏可见性
+      document.getElementById('copilot-controls').classList.remove('hidden');
+      document.getElementById('chat-input-panel').classList.remove('hidden');
+      document.getElementById('one-click-price-btn').classList.remove('hidden');
+
+      const exportBtn = document.getElementById('export-transcript-btn');
+      if (exportBtn) {
+        exportBtn.classList.remove('hidden');
+        exportBtn.classList.add('flex');
+      }
+      removeTypingIndicator();
+
+      if (currentConversation) {
+        document.getElementById('cur-buyer-name').innerText = currentConversation.buyer_name;
+        document.getElementById('cur-chat-id').innerText = `ID: ${currentConversation.chat_id}`;
+        document.getElementById('cur-bargain-count').innerText = `议价轮次: ${currentConversation.bargain_count}`;
+        document.getElementById('radar-bargain-count').innerText = `${currentConversation.bargain_count} 轮`;
+        document.getElementById('radar-latest-intent').innerText = currentConversation.latest_intent || '通用';
+
+        updateBuyerSentimentRadar(currentConversation.buyer_sentiment);
+
+        updateCopilotButtons(currentConversation.copilot_mode);
+        if (currentConversation.item_id) {
+          fetchItemDetail(currentConversation.item_id);
+        }
+      }
+
+      // 移动端体验：点击买家自动无缝切到聊天窗口
+      if (window.innerWidth < 1024) {
+        switchMobileTab('chat');
+      }
+
+      await loadChatMessages(chatId);
+    }
+
+    // 动态更新买家意向情绪雷达指示器
+    function updateBuyerSentimentRadar(sentiment) {
+      const badge = document.getElementById('radar-sentiment-badge');
+      const text = document.getElementById('radar-sentiment-text');
+      if (!badge && !text) return;
+
+      if (sentiment === 'urgent') {
+        if (badge) {
+          badge.className = 'text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded text-[10px] font-bold animate-pulse';
+          badge.innerHTML = '<i class="fa-solid fa-fire mr-0.5"></i>加急求购';
+        }
+        if (text) {
+          text.className = 'text-rose-400 font-bold';
+          text.innerText = '🔥 情绪急切 (建议秒回抓单)';
+        }
+      } else if (sentiment === 'positive') {
+        if (badge) {
+          badge.className = 'text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px] font-medium';
+          badge.innerHTML = '<i class="fa-solid fa-star mr-0.5"></i>成交意向高';
+        }
+        if (text) {
+          text.className = 'text-emerald-400 font-medium';
+          text.innerText = '⭐ 购买意向强 (促成转化)';
+        }
+      } else if (sentiment === 'negative') {
+        if (badge) {
+          badge.className = 'text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded text-[10px] font-medium';
+          badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-0.5"></i>疑虑/敏感';
+        }
+        if (text) {
+          text.className = 'text-amber-400 font-medium';
+          text.innerText = '⚠️ 存疑或谨慎 (耐心解答)';
+        }
+      } else {
+        if (badge) {
+          badge.className = 'text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded text-[10px] font-medium';
+          badge.innerHTML = '咨询中';
+        }
+        if (text) {
+          text.className = 'text-slate-300 font-medium';
+          text.innerText = '标准日常咨询';
+        }
+      }
+    }
+
+    // 导出并复制当前会话记录
+    async function copyConversationTranscript() {
+      if (!activeChatId) {
+        alert("请先在左侧选择需要导出的买家会话");
+        return;
+      }
+      const btn = document.getElementById('export-transcript-btn');
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-indigo-400 mr-1"></i><span>导出中...</span>`;
+
+      try {
+        const res = await fetch(`/api/conversations/${activeChatId}/export`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const text = data.transcript || '';
+        if (!text) {
+          alert("当前会话暂无聊天消息记录");
+          btn.innerHTML = origHtml;
+          return;
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+          btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400 mr-1"></i><span>已复制记录</span>`;
+          setTimeout(() => { btn.innerHTML = origHtml; }, 2000);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400 mr-1"></i><span>已复制记录</span>`;
+          setTimeout(() => { btn.innerHTML = origHtml; }, 2000);
+        }
+      } catch (err) {
+        alert("导出失败: " + err);
+        btn.innerHTML = origHtml;
+      }
+    }
+
+    // 加载指定会话聊天历史
+    async function loadChatMessages(chatId) {
+      const container = document.getElementById('messages-container');
+      container.innerHTML = `<div class="p-8 text-center text-xs text-slate-500"><i class="fa-solid fa-spinner fa-spin mr-1"></i>加载聊天记录...</div>`;
+
+      try {
+        const res = await fetch(`/api/conversations/${chatId}/messages`);
+        const messages = await res.json();
+        
+        container.innerHTML = '';
+        if (messages.length === 0) {
+          container.innerHTML = `<div class="p-8 text-center text-xs text-slate-500">暂无历史消息</div>`;
+          return;
+        }
+
+        messages.forEach(msg => {
+          if (msg.draft_status === 'pending') {
+            appendDraftBubble({
+              draft_id: msg.id,
+              content: msg.content,
+              intent: msg.intent,
+              thinking: msg.ai_thinking,
+              timestamp: msg.timestamp
+            });
+          } else {
+            appendMessageBubble(msg);
+          }
+        });
+
+        container.scrollTop = container.scrollHeight;
+      } catch (err) {
+        console.error("加载消息失败:", err);
+      }
+    }
+
+    // 渲染普通消息气泡 (严格 XSS 消毒过滤)
+    function appendMessageBubble(msg) {
+      const container = document.getElementById('messages-container');
+      const isUser = msg.role === 'user';
+      const isManual = msg.role === 'seller_manual';
+      const timeStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+      const safeContent = escapeHtml(msg.content);
+      const safeSender = escapeHtml(isUser ? (currentConversation?.buyer_name || '买家') : (isManual ? '👤 卖家插话' : '🤖 AI 自动回复'));
+
+      const rawContent = (msg.content || '').trim();
+      const isImg = /^(https?:\/\/[^\s]+?\.(?:png|jpg|jpeg|gif|webp))(\?[^\s]*)?$/i.test(rawContent);
+
+      let contentHtml = '';
+      if (isImg) {
+        contentHtml = `
+          <div class="cursor-zoom-in space-y-1" onclick="openLightbox('${escapeHtml(rawContent)}')">
+            <img src="${escapeHtml(rawContent)}" alt="实物细节图" class="max-w-[220px] max-h-[220px] rounded-lg object-cover border border-slate-700/60 shadow hover:opacity-90 transition">
+            <div class="text-[10px] text-slate-300 flex items-center space-x-1"><i class="fa-solid fa-magnifying-glass-plus"></i><span>点击放大全屏查看</span></div>
+          </div>
+        `;
+      } else {
+        contentHtml = safeContent;
+      }
+
+      const bubbleHtml = `
+        <div class="flex flex-col ${isUser ? 'items-start' : 'items-end'} space-y-1">
+          <div class="flex items-center space-x-1.5 text-[11px] text-slate-400">
+            <span>${safeSender}</span>
+            <span>•</span>
+            <span>${timeStr}</span>
+          </div>
+          <div class="max-w-[75%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed ${
+            isUser ? 'bg-slate-800 text-slate-100 rounded-tl-sm' : (
+              isManual ? 'bg-amber-600 text-white rounded-tr-sm' : 'bg-indigo-600 text-white rounded-tr-sm'
+            )
+          }">
+            ${contentHtml}
+          </div>
+          ${msg.ai_thinking ? `
+            <details class="text-[10px] text-slate-400 bg-slate-900/60 p-2 rounded border border-slate-800/80 max-w-[75%]">
+              <summary class="cursor-pointer font-medium hover:text-indigo-400">💡 查看 AI 思考决策与守卫</summary>
+              <div class="mt-1 pt-1 border-t border-slate-800 font-mono text-slate-300 whitespace-pre-wrap">${escapeHtml(msg.ai_thinking)}</div>
+            </details>
+          ` : ''}
+        </div>
+      `;
+
+      container.insertAdjacentHTML('beforeend', bubbleHtml);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // 渲染待审核草稿气泡 (Human-in-the-Loop)
+    function appendDraftBubble(draft) {
+      const container = document.getElementById('messages-container');
+      const safeContent = escapeHtml(draft.content);
+      const safeIntent = escapeHtml(draft.intent || '价格');
+      const safeThinking = escapeHtml(draft.thinking || '');
+
+      const draftHtml = `
+        <div id="draft-card-${draft.draft_id}" class="border border-amber-500/40 bg-amber-950/20 p-3.5 rounded-xl space-y-2 max-w-[85%] ml-auto shadow-lg shadow-amber-950/20">
+          <div class="flex items-center justify-between text-xs text-amber-400 font-semibold">
+            <span class="flex items-center space-x-1.5"><i class="fa-solid fa-wand-magic-sparkles"></i><span>AI 建议回复草稿 (待人工确认)</span></span>
+            <span class="text-[10px] bg-amber-500/20 px-1.5 py-0.5 rounded">意图: ${safeIntent}</span>
+          </div>
+          <div class="text-xs text-slate-200 bg-slate-950/80 p-2.5 rounded border border-amber-500/20 whitespace-pre-wrap font-sans">
+            ${safeContent}
+          </div>
+          ${safeThinking ? `<div class="text-[10px] text-slate-400 italic">${safeThinking}</div>` : ''}
+          <div class="flex items-center justify-end space-x-2 pt-1">
+            <button onclick="rejectDraft(${draft.draft_id})" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition">驳回</button>
+            <button onclick="approveDraft(${draft.draft_id})" class="px-3.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow transition">一键放行发送</button>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', draftHtml);
+      container.scrollTop = container.scrollHeight;
+    }
+
+
+    // 放行草稿
+    async function approveDraft(draftId) {
+      try {
+        const res = await fetch('/api/messages/approve_draft', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({draft_id: draftId})
+        });
+        if (res.ok) {
+          const el = document.getElementById(`draft-card-${draftId}`);
+          if (el) el.remove();
+        }
+      } catch (e) {
+        alert("放行失败: " + e);
+      }
+    }
+
+    // 驳回草稿
+    async function rejectDraft(draftId) {
+      try {
+        await fetch('/api/messages/reject_draft', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({draft_id: draftId})
+        });
+        const el = document.getElementById(`draft-card-${draftId}`);
+        if (el) el.remove();
+      } catch (e) {
+        alert("驳回失败: " + e);
+      }
+    }
+
+    // 卖家手动插话发送
+    async function sendSellerMessage() {
+      const textarea = document.getElementById('message-textarea');
+      const text = textarea.value.trim();
+      if (!text || !activeChatId) return;
+
+      textarea.value = '';
+      try {
+        await fetch('/api/messages/send', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            chat_id: activeChatId,
+            content: text,
+            mode_action: 'manual'
+          })
+        });
+        // 自动更新工作台接管模式为 manual
+        changeCurrentMode('manual');
+      } catch (err) {
+        alert("发送失败: " + err);
+      }
+    }
+
+    // ==========================================
+    // 自定义常用快捷话术库 (Canned Replies)
+    // ==========================================
+    let cannedRepliesList = [];
+
+    // 快捷回复文本注入
+    function insertQuickReply(text) {
+      const textarea = document.getElementById('message-textarea');
+      if (!textarea) return;
+      textarea.value = text;
+      textarea.focus();
+    }
+
+    function insertQuickReplyById(id) {
+      const item = cannedRepliesList.find(c => c.id === id);
+      if (!item) return;
+      insertQuickReply(item.content);
+    }
+
+    function toggleCannedDrawer() {
+      const drawer = document.getElementById('canned-drawer');
+      if (drawer) {
+        drawer.classList.toggle('hidden');
+      }
+    }
+
+    function toggleAddCannedForm() {
+      const form = document.getElementById('add-canned-form');
+      if (form) {
+        form.classList.toggle('hidden');
+        if (!form.classList.contains('hidden')) {
+          const inp = document.getElementById('new-canned-title');
+          if (inp) inp.focus();
+        }
+      }
+    }
+
+    async function loadCannedReplies() {
+      try {
+        const res = await fetch('/api/canned_replies');
+        if (!res.ok) return;
+        cannedRepliesList = await res.json();
+
+        // 1. 渲染输入框上方的横向滚动快捷栏 (前 6 个最常用)
+        const quickBar = document.getElementById('quick-bar-items');
+        if (quickBar) {
+          quickBar.innerHTML = cannedRepliesList.slice(0, 6).map(c => `
+            <button onclick="insertQuickReplyById(${c.id})" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition shrink-0 truncate max-w-[140px]" title="${escapeHtml(c.content)}">
+              ${escapeHtml(c.title)}
+            </button>
+          `).join('');
+        }
+
+        // 2. 渲染抽屉面板内的完整卡片列表
+        const drawerContainer = document.getElementById('canned-list-container');
+        if (drawerContainer) {
+          if (cannedRepliesList.length === 0) {
+            drawerContainer.innerHTML = `<div class="text-slate-500 text-center py-4 col-span-2">暂无常用话术，请点击右上角新建</div>`;
+            return;
+          }
+
+          drawerContainer.innerHTML = cannedRepliesList.map(c => `
+            <div class="bg-slate-900 border border-slate-800/80 rounded-lg p-2 space-y-1 hover:border-slate-700 transition">
+              <div class="flex items-center justify-between">
+                <span class="font-semibold text-slate-200 text-[11px] truncate">${escapeHtml(c.title)}</span>
+                <div class="flex items-center space-x-1 shrink-0">
+                  <button onclick="insertQuickReplyById(${c.id})" class="px-1.5 py-0.5 rounded bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-[10px] font-medium transition" title="填入输入框">
+                    填入
+                  </button>
+                  <button onclick="deleteCannedReply(${c.id})" class="text-slate-500 hover:text-rose-400 p-0.5 text-[10px] transition" title="删除话术">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+              <p class="text-[10px] text-slate-400 line-clamp-2 select-all">${escapeHtml(c.content)}</p>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error("加载快捷话术失败:", err);
+      }
+    }
+
+    async function submitNewCannedReply() {
+      const titleInput = document.getElementById('new-canned-title');
+      const contentInput = document.getElementById('new-canned-content');
+      const title = titleInput.value.trim();
+      const content = contentInput.value.trim();
+
+      if (!title || !content) {
+        alert("话术简称和完整内容均不能为空");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/canned_replies', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ title: title, content: content })
+        });
+        if (res.ok) {
+          titleInput.value = '';
+          contentInput.value = '';
+          toggleAddCannedForm();
+          await loadCannedReplies();
+        } else {
+          const err = await res.json();
+          alert("保存失败: " + (err.detail || '未知错误'));
+        }
+      } catch (err) {
+        alert("网络异常: " + err);
+      }
+    }
+
+    async function deleteCannedReply(id) {
+      if (!confirm("确定删除该快捷话术吗？")) return;
+      try {
+        const res = await fetch(`/api/canned_replies/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          await loadCannedReplies();
+        }
+      } catch (err) {
+        alert("删除失败: " + err);
+      }
+    }
+
+    // 切换当前会话的协同模式
+    async function changeCurrentMode(mode) {
+      if (!activeChatId) return;
+      try {
+        await fetch(`/api/conversations/${activeChatId}/mode`, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({copilot_mode: mode})
+        });
+        updateCopilotButtons(mode);
+        fetchConversations();
+      } catch (err) {
+        console.error("更新协同模式失败:", err);
+      }
+    }
+
+    function updateCopilotButtons(mode) {
+      const autoBtn = document.getElementById('mode-btn-auto');
+      const draftBtn = document.getElementById('mode-btn-draft');
+      const manualBtn = document.getElementById('mode-btn-manual');
+
+      const activeCls = 'bg-slate-800 text-white shadow-sm';
+      const inactiveCls = 'text-slate-400 hover:text-slate-200';
+
+      autoBtn.className = `px-2.5 py-1 rounded font-medium flex items-center space-x-1 transition ${mode === 'auto' ? activeCls : inactiveCls}`;
+      draftBtn.className = `px-2.5 py-1 rounded font-medium flex items-center space-x-1 transition ${mode === 'draft' ? activeCls : inactiveCls}`;
+      manualBtn.className = `px-2.5 py-1 rounded font-medium flex items-center space-x-1 transition ${mode === 'manual' ? activeCls : inactiveCls}`;
+    }
+
+    // 加载右侧商品信息与护栏配置
+    async function fetchItemDetail(itemId) {
+      try {
+        const res = await fetch(`/api/items/${itemId}`);
+        if (!res.ok) return;
+        currentItem = await res.json();
+
+        document.getElementById('item-title').innerText = currentItem.title;
+        document.getElementById('item-price').innerText = `¥${currentItem.price}`;
+        document.getElementById('item-desc').innerText = currentItem.desc;
+        document.getElementById('item-id-label').innerText = currentItem.item_id;
+
+        document.getElementById('input-min-price').value = currentItem.min_price;
+        document.getElementById('input-step-discount').value = currentItem.step_discount;
+        document.getElementById('input-max-rounds').value = currentItem.max_bargain_rounds;
+        document.getElementById('input-gift-desc').value = currentItem.gift_description;
+        document.getElementById('input-tech-specs').value = currentItem.tech_specs;
+      } catch (err) {
+        console.error("加载商品详情失败:", err);
+      }
+    }
+
+    // 保存价格护栏配置
+    async function saveItemGuardrail() {
+      if (!currentItem) return;
+      const minPrice = parseFloat(document.getElementById('input-min-price').value);
+      const stepDiscount = parseFloat(document.getElementById('input-step-discount').value);
+      const maxRounds = parseInt(document.getElementById('input-max-rounds').value);
+      const giftDesc = document.getElementById('input-gift-desc').value;
+      const techSpecs = document.getElementById('input-tech-specs').value;
+
+      try {
+        const res = await fetch(`/api/items/${currentItem.item_id}`, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            min_price: minPrice,
+            step_discount: stepDiscount,
+            max_bargain_rounds: maxRounds,
+            gift_description: giftDesc,
+            tech_specs: techSpecs
+          })
+        });
+        if (res.ok) {
+          alert("✅ 确定性守价规则已生效保存！");
+        } else {
+          const err = await res.json();
+          alert("保存失败: " + err.detail);
+        }
+      } catch (e) {
+        alert("网络错误: " + e);
+      }
+    }
+
+    // 同步商品
+    async function syncCurrentItem() {
+      if (!currentItem) return;
+      try {
+        const res = await fetch(`/api/items/sync/${currentItem.item_id}`, {method: 'POST'});
+        if (res.ok) {
+          await fetchItemDetail(currentItem.item_id);
+          alert("✅ 已从闲鱼官方同步最新商品信息！");
+        }
+      } catch (e) {
+        alert("同步异常: " + e);
+      }
+    }
+
+    // 获取仪表盘统计
+    async function fetchDashboardStats() {
+      try {
+        const res = await fetch('/api/stats/dashboard');
+        const data = await res.json();
+        document.getElementById('stat-convs').innerText = data.total_conversations;
+        document.getElementById('stat-ai-rate').innerText = `${data.ai_handling_rate}%`;
+        document.getElementById('stat-bargain').innerText = data.bargain_conversations;
+        document.getElementById('stat-drafts').innerText = data.draft_conversations;
+
+        // 同步卡密可用库存角标
+        const cardRes = await fetch('/api/cards/stats');
+        if (cardRes.ok) {
+          const cardData = await cardRes.json();
+          const badge = document.getElementById('card-badge');
+          if (badge) badge.innerText = cardData.available || 0;
+        }
+      } catch (e) {}
+    }
+
+    // 过滤切换
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-tab').forEach(b => {
+        b.className = 'filter-tab flex-1 py-1 rounded font-medium text-center hover:text-slate-200';
+      });
+      event.target.className = 'filter-tab flex-1 py-1 rounded font-medium text-center bg-slate-800 text-slate-200';
+      fetchConversations();
+    }
+
+    // 模态框开关
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+      document.getElementById(id).classList.add('flex');
+      if (id === 'cards-modal') loadCardsModal();
+      if (id === 'items-modal') loadAllItemsModal();
+      if (id === 'faq-modal') loadFaqsModal();
+      if (id === 'order-rules-modal') loadOrderRulesModal();
+      if (id === 'accounts-modal') loadAccountsModal();
+      if (id === 'faq-test-modal') {
+        const inp = document.getElementById('rag-test-input');
+        if (inp) setTimeout(() => inp.focus(), 100);
+      }
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+      document.getElementById(id).classList.remove('flex');
+    }
+
+    // ==========================================
+    // 真实改价交易闭环交互逻辑
+    // ==========================================
+    function promptOneClickModifyPrice() {
+      if (!activeChatId) {
+        alert("请先在左侧选择需要改价的买家会话");
+        return;
+      }
+      const titleEl = document.getElementById('mod-price-item-title');
+      const curPriceEl = document.getElementById('mod-price-current-val');
+      const targetInput = document.getElementById('mod-price-target-val');
+
+      if (currentItem) {
+        titleEl.innerText = currentItem.title || '当前咨询商品';
+        curPriceEl.innerText = `¥${currentItem.price}`;
+        targetInput.value = currentItem.min_price || currentItem.price;
+      } else {
+        titleEl.innerText = '未关联特定商品';
+        curPriceEl.innerText = '¥--';
+        targetInput.value = '';
+      }
+      openModal('modify-price-modal');
+    }
+
+    async function submitOneClickModifyPrice() {
+      if (!activeChatId) return;
+      const targetVal = parseFloat(document.getElementById('mod-price-target-val').value);
+      if (isNaN(targetVal) || targetVal <= 0) {
+        alert("请输入有效的成交金额");
+        return;
+      }
+
+      const updateItem = document.getElementById('mod-price-update-item').checked;
+      const notifyBuyer = document.getElementById('mod-price-notify-buyer').checked;
+      const btn = document.getElementById('mod-price-submit-btn');
+      btn.disabled = true;
+      btn.innerText = '执行改价中...';
+
+      try {
+        const res = await fetch('/api/orders/modify_price', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            chat_id: activeChatId,
+            target_price: targetVal,
+            update_item_listing: updateItem,
+            notify_buyer: notifyBuyer
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          closeModal('modify-price-modal');
+          let tip = `✅ 协商成交价已定为 ¥${targetVal}！\n`;
+          if (data.mtop_item_success) tip += "• 闲鱼官方商品标价已同步修改 (MTOP)\n";
+          if (data.mtop_order_success) tip += "• 闲鱼订单待支付金额已下调\n";
+          tip += "• 改价消息已下发告知买家，引导支付！";
+          alert(tip);
+          if (currentConversation && currentConversation.item_id) {
+            fetchItemDetail(currentConversation.item_id);
+          }
+          loadChatMessages(activeChatId);
+        } else {
+          alert("改价处理失败: " + (data.detail || '未知错误'));
+        }
+      } catch (e) {
+        alert("请求异常: " + e);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '确认改价并生效';
+      }
+    }
+
+    // ==========================================
+    // 一卡一密虚拟资产库存管理逻辑
+    // ==========================================
+    let currentCardFilter = '';
+    async function loadCardsModal(status = currentCardFilter) {
+      currentCardFilter = status;
+      const container = document.getElementById('cards-modal-list');
+      const statsEl = document.getElementById('card-modal-stats');
+      try {
+        const statsRes = await fetch('/api/cards/stats');
+        if (statsRes.ok) {
+          const stats = await statsRes.json();
+          statsEl.innerText = `库存总计: ${stats.total} 条 | 待发库存: ${stats.available} 条 | 已核销: ${stats.used} 条`;
+          const badge = document.getElementById('card-badge');
+          if (badge) badge.innerText = stats.available;
+        }
+
+        const url = status ? `/api/cards?status=${status}` : '/api/cards';
+        const res = await fetch(url);
+        const cards = await res.json();
+        if (cards.length === 0) {
+          container.innerHTML = `<div class="text-slate-500 text-center py-8">暂无相关卡密数据，请在上方批量录入</div>`;
+          return;
+        }
+
+        container.innerHTML = cards.map(c => {
+          const isAvail = c.status === 'available';
+          const timeStr = c.created_at ? new Date(c.created_at).toLocaleDateString() : '';
+          const usedStr = c.used_at ? new Date(c.used_at).toLocaleDateString() : '';
+          return `
+            <div class="py-2.5 flex items-start justify-between space-x-3">
+              <div class="space-y-1 flex-1 min-w-0">
+                <div class="flex items-center space-x-2">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isAvail ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-400'}">
+                    ${isAvail ? '待发放 (库存中)' : '已核销发放'}
+                  </span>
+                  ${c.item_id ? `<span class="text-[10px] text-indigo-400">商品ID: ${escapeHtml(c.item_id)}</span>` : '<span class="text-[10px] text-slate-500">通用卡密</span>'}
+                  <span class="text-[10px] text-slate-500">入库: ${timeStr}</span>
+                </div>
+                <div class="text-slate-200 text-xs font-mono bg-slate-950/80 p-2 rounded border border-slate-800 break-all select-all">
+                  ${escapeHtml(c.card_code)}
+                </div>
+                ${!isAvail ? `<div class="text-[10px] text-slate-400">买家: ${escapeHtml(c.buyer_id || '--')} | 发放时间: ${usedStr}</div>` : ''}
+              </div>
+              <button onclick="deleteCard(${c.id})" class="text-slate-500 hover:text-rose-400 p-1.5 transition text-xs shrink-0" title="删除卡密">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        container.innerHTML = `<div class="text-rose-400 text-center py-4">加载卡密失败</div>`;
+      }
+    }
+
+    function filterCardsModal(status) {
+      document.querySelectorAll('.card-filter-btn').forEach(b => {
+        b.className = 'card-filter-btn px-2.5 py-1 rounded text-slate-400 hover:text-slate-200';
+      });
+      if (status === '') document.getElementById('card-tab-all').className = 'card-filter-btn px-2.5 py-1 rounded bg-slate-800 text-slate-200 font-medium';
+      if (status === 'available') document.getElementById('card-tab-avail').className = 'card-filter-btn px-2.5 py-1 rounded bg-slate-800 text-slate-200 font-medium';
+      if (status === 'used') document.getElementById('card-tab-used').className = 'card-filter-btn px-2.5 py-1 rounded bg-slate-800 text-slate-200 font-medium';
+      loadCardsModal(status);
+    }
+
+    async function submitBatchCards() {
+      const itemId = document.getElementById('card-new-item-id').value.trim();
+      const codes = document.getElementById('card-batch-codes').value.trim();
+      if (!codes) {
+        alert("请粘贴需要入库的卡密文本");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/cards/batch', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({item_id: itemId || null, codes: codes})
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ 成功批量入库 ${data.imported_count} 条卡密！`);
+          document.getElementById('card-batch-codes').value = '';
+          loadCardsModal();
+          fetchDashboardStats();
+        } else {
+          alert("入库失败: " + (data.detail || '未知错误'));
+        }
+      } catch (e) {
+        alert("请求异常: " + e);
+      }
+    }
+
+    async function deleteCard(cardId) {
+      if (!confirm("确定删除该卡密吗？")) return;
+      try {
+        await fetch(`/api/cards/${cardId}`, {method: 'DELETE'});
+        loadCardsModal();
+        fetchDashboardStats();
+      } catch (e) {}
+    }
+
+    // ==========================================
+    // 多账号矩阵管理与独立代理配置
+    // ==========================================
+    async function loadAccountsModal() {
+      const container = document.getElementById('accounts-modal-list');
+      try {
+        const res = await fetch('/api/accounts');
+        const accounts = await res.json();
+        if (accounts.length === 0) {
+          container.innerHTML = `<div class="text-slate-500 text-center py-6">暂未接入闲鱼店铺账号，请在下方表单粘贴 Cookie 绑定</div>`;
+          return;
+        }
+
+        container.innerHTML = accounts.map(acc => {
+          const isOnline = acc.connection_status === 'online';
+          const isCaptcha = acc.risk_status === 'captcha_required' || acc.connection_status === 'captcha_required';
+          let statusBadge = '';
+          if (isCaptcha) {
+            statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse"><i class="fa-solid fa-puzzle-piece mr-1"></i>滑块待解</span>`;
+          } else if (isOnline) {
+            statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"><i class="fa-solid fa-circle-check mr-1"></i>在线值守</span>`;
+          } else if (acc.connection_status === 'reconnecting') {
+            statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"><i class="fa-solid fa-arrows-rotate fa-spin mr-1"></i>重连中</span>`;
+          } else {
+            statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">离线</span>`;
+          }
+
+          const proxyDisplay = acc.proxy_url ? `<span class="text-indigo-300 font-mono">${escapeHtml(acc.proxy_url)}</span>` : '<span class="text-slate-500">直连 (未配代理)</span>';
+
+          return `
+            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <span class="font-bold text-slate-100 text-xs">${escapeHtml(acc.nickname)}</span>
+                  <span class="text-[10px] text-slate-500 font-mono">UID: ${escapeHtml(acc.user_id)}</span>
+                  ${statusBadge}
+                </div>
+                <div class="flex items-center space-x-1.5">
+                  ${isCaptcha ? `
+                    <button onclick="openCaptchaModal('${escapeHtml(acc.user_id)}', '${escapeHtml(acc.verify_url || '')}')" class="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition flex items-center space-x-1 shadow">
+                      <i class="fa-solid fa-puzzle-piece"></i><span>辅助过盾</span>
+                    </button>
+                  ` : ''}
+                  <button onclick="toggleAccountActive('${escapeHtml(acc.user_id)}')" class="px-2.5 py-1 rounded text-xs font-medium ${acc.is_active ? 'bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}">
+                    ${acc.is_active ? '自动值守中' : '已暂停'}
+                  </button>
+                  <button onclick="deleteAccount('${escapeHtml(acc.user_id)}')" class="p-1.5 text-slate-500 hover:text-rose-400 transition" title="注销账号"><i class="fa-solid fa-trash"></i></button>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-900">
+                <div class="flex items-center space-x-1.5 text-slate-400 truncate mr-2">
+                  <i class="fa-solid fa-network-wired text-slate-500 text-xs"></i>
+                  <span>代理: ${proxyDisplay}</span>
+                </div>
+                <button onclick="testAccountProxy('${escapeHtml(acc.user_id)}', this)" class="shrink-0 px-2.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[10px] transition flex items-center space-x-1">
+                  <i class="fa-solid fa-bolt text-indigo-400"></i><span>测试连通性</span>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        container.innerHTML = `<div class="text-rose-400 text-center py-4">加载账号列表失败</div>`;
+      }
+    }
+
+    async function testAccountProxy(userId, btnEl) {
+      const originalHtml = btnEl.innerHTML;
+      btnEl.disabled = true;
+      btnEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i><span>探测中...</span>`;
+      try {
+        const res = await fetch(`/api/accounts/${userId}/test_proxy`, {method: 'POST'});
+        const data = await res.json();
+        if (data.success) {
+          alert(`✅ 网络与代理连通性探测成功！\n出网 IP: ${data.ip || '正常'}\n延迟: ${data.latency_ms} ms\n通信通道: ${data.proxy || '系统直连'}`);
+        } else {
+          alert(`⚠️ 网络探测失败或异常:\n${data.error || data.message || '无法连接指定代理'}`);
+        }
+      } catch (e) {
+        alert("网络探测请求异常: " + e);
+      } finally {
+        btnEl.disabled = false;
+        btnEl.innerHTML = originalHtml;
+      }
+    }
+
+    async function toggleAccountActive(userId) {
+      try {
+        await fetch(`/api/accounts/${userId}/toggle`, {method: 'POST'});
+        loadAccountsModal();
+        fetchConversations();
+      } catch (e) {}
+    }
+
+    async function deleteAccount(userId) {
+      if (!confirm(`确定注销并移除店铺账号 ${userId} 吗？`)) return;
+      try {
+        await fetch(`/api/accounts/${userId}`, {method: 'DELETE'});
+        loadAccountsModal();
+        fetchConversations();
+      } catch (e) {}
+    }
+
+    // 保存或更新账号
+    async function saveAccount() {
+      const nickname = document.getElementById('acc-nickname').value.trim();
+      const proxy = document.getElementById('acc-proxy').value.trim();
+      const cookie = document.getElementById('acc-cookie').value.trim();
+      if (!cookie) {
+        alert("Cookie 不能为空");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/accounts', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            nickname: nickname || '闲鱼店铺',
+            cookie_str: cookie,
+            proxy_url: proxy || null
+          })
+        });
+        if (res.ok) {
+          document.getElementById('acc-cookie').value = '';
+          document.getElementById('acc-proxy').value = '';
+          document.getElementById('acc-nickname').value = '';
+          alert("✅ 店铺账号已接入/更新，长连接与代理通道已初始化！");
+          loadAccountsModal();
+          fetchConversations();
+        } else {
+          const err = await res.json();
+          alert("接入失败: " + (err.detail || JSON.stringify(err)));
+        }
+      } catch (e) {
+        alert("网络异常: " + e);
+      }
+    }
+
+    // ==========================================
+    // 风控滑块紧急处理与过盾恢复
+    // ==========================================
+    let currentRiskSellerId = '';
+    let currentVerifyUrl = '';
+
+    function handleAccountRisk(data) {
+      currentRiskSellerId = data.seller_id || '';
+      currentVerifyUrl = data.verify_url || '';
+      showRiskBanner(data);
+      playNotificationSound('draft');
+      sendDesktopNotification('⚠️ 闲鱼风控滑块挑战 (RGV587)', `店铺账号 ${currentRiskSellerId} 触发滑块挑战，请点击辅助过盾`);
+    }
+
+    function showRiskBanner(data) {
+      const banner = document.getElementById('risk-alert-banner');
+      if (banner) {
+        banner.classList.remove('hidden');
+        document.getElementById('risk-acc-name').innerText = data.seller_id || '--';
+      }
+    }
+
+    function hideRiskBanner() {
+      const banner = document.getElementById('risk-alert-banner');
+      if (banner) {
+        banner.classList.add('hidden');
+      }
+    }
+
+    function openCaptchaModal(sellerId, verifyUrl) {
+      const sid = sellerId || currentRiskSellerId;
+      const vurl = verifyUrl || currentVerifyUrl || `https://passport.goofish.com/newlogin/hasLogin.do?hid=${sid}`;
+      currentRiskSellerId = sid;
+      currentVerifyUrl = vurl;
+
+      document.getElementById('captcha-target-acc').innerText = sid || '当前店铺';
+      const jumpLink = document.getElementById('captcha-jump-link');
+      if (jumpLink) jumpLink.href = vurl;
+
+      openModal('captcha-modal');
+    }
+
+    async function verifyCaptchaResolution() {
+      if (!currentRiskSellerId) {
+        alert("未指定检测账号");
+        return;
+      }
+      const btn = document.getElementById('captcha-verify-btn');
+      const origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i><span>正在向闲鱼复查登录态...</span>`;
+
+      try {
+        const res = await fetch(`/api/accounts/${currentRiskSellerId}/resolve_risk`, {method: 'POST'});
+        const data = await res.json();
+        if (data.status === 'resolved') {
+          hideRiskBanner();
+          closeModal('captcha-modal');
+          alert("🎉 恭喜！闲鱼滑块风控验证已通过，店铺长连接与自动回复已自愈恢复！");
+          fetchConversations();
+          loadAccountsModal();
+        } else {
+          alert(`⚠️ ${data.message || '复查未通过，请确保已在弹出的网页中完成拼图滑动'}`);
+        }
+      } catch (e) {
+        alert("网络检测异常: " + e);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+      }
+    }
+
+    // ==========================================
+    // RAG 知识库检索模拟测试器
+    // ==========================================
+    async function runRagSimulation() {
+      const input = document.getElementById('rag-test-input');
+      const query = input.value.trim();
+      if (!query) {
+        alert("请输入要测试的买家问题");
+        return;
+      }
+      const resultContainer = document.getElementById('rag-test-result');
+      resultContainer.innerHTML = `<div class="text-center py-6 text-slate-500"><i class="fa-solid fa-spinner fa-spin mr-1"></i>正在进行分词、概念泛化与 BM25 计算...</div>`;
+
+      try {
+        const res = await fetch('/api/faqs/simulate', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            query: query,
+            item_id: currentConversation?.item_id || null,
+            top_k: 3,
+            min_score: 0.2
+          })
+        });
+        const data = await res.json();
+        
+        const tokenPills = (data.tokens || []).map(t => {
+          const isConcept = t.startsWith('concept_');
+          const cls = isConcept ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold' : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30';
+          return `<span class="px-2 py-0.5 rounded text-[10px] font-mono ${cls}">${escapeHtml(t)}</span>`;
+        }).join(' ');
+
+        let matchesHtml = '';
+        if (data.results.length === 0) {
+          matchesHtml = `<div class="p-4 rounded bg-slate-900 text-slate-400 text-center">未达到最低相似度阈值 (无条目召回)</div>`;
+        } else {
+          matchesHtml = data.results.map((r, idx) => {
+            const pct = Math.round(r.score * 100);
+            return `
+              <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-slate-100 text-xs">#${idx + 1} ${escapeHtml(r.question)}</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">综合置信度: ${pct}%</span>
+                </div>
+                <div class="text-[11px] text-slate-300 bg-slate-950/80 p-2 rounded border border-slate-800/80">
+                  <span class="text-emerald-400 font-semibold">官方答复:</span> ${escapeHtml(r.answer)}
+                </div>
+                <div class="flex items-center space-x-3 text-[10px] text-slate-400 pt-1">
+                  <span>BM25 得分: <b class="text-slate-200">${r.bm25_score}</b></span>
+                  <span>余弦相似度: <b class="text-slate-200">${r.cosine_score}</b></span>
+                  ${r.matched_terms?.length ? `<span>命中特征: <b class="text-indigo-300">${escapeHtml(r.matched_terms.join(', '))}</b></span>` : ''}
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        resultContainer.innerHTML = `
+          <div class="space-y-3">
+            <div>
+              <div class="text-slate-400 text-[11px] mb-1 font-semibold">1. 分词与同义词概念提取:</div>
+              <div class="flex flex-wrap gap-1">${tokenPills}</div>
+            </div>
+            <div>
+              <div class="text-slate-400 text-[11px] mb-1 font-semibold">2. 混合检索召回条目 (${data.match_count} 条):</div>
+              <div class="space-y-2">${matchesHtml}</div>
+            </div>
+            ${data.formatted_prompt_context ? `
+              <div>
+                <div class="text-slate-400 text-[11px] mb-1 font-semibold">3. 注入大模型的提示词上下文预览:</div>
+                <pre class="bg-slate-900 p-2.5 rounded border border-slate-800 text-[11px] font-mono text-emerald-300 whitespace-pre-wrap">${escapeHtml(data.formatted_prompt_context)}</pre>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      } catch (e) {
+        resultContainer.innerHTML = `<div class="text-rose-400 text-center py-4">检索模拟请求异常: ${escapeHtml(e.toString())}</div>`;
+      }
+    }
+
+    function fillRagTest(text) {
+      document.getElementById('rag-test-input').value = text;
+      runRagSimulation();
+    }
+
+    // ==========================================
+    // 图片全屏灯箱缩放预览
+    // ==========================================
+    let currentZoom = 1.0;
+
+    function openLightbox(src) {
+      const modal = document.getElementById('image-lightbox');
+      const img = document.getElementById('lightbox-img');
+      img.src = src;
+      currentZoom = 1.0;
+      img.style.transform = `scale(${currentZoom})`;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeLightbox(e) {
+      if (e && e.target && e.target.tagName === 'IMG') return;
+      const modal = document.getElementById('image-lightbox');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function zoomLightbox(delta) {
+      currentZoom = Math.max(0.5, Math.min(3.0, currentZoom + delta));
+      const img = document.getElementById('lightbox-img');
+      img.style.transform = `scale(${currentZoom})`;
+    }
+
+    function resetLightboxZoom() {
+      currentZoom = 1.0;
+      const img = document.getElementById('lightbox-img');
+      img.style.transform = `scale(${currentZoom})`;
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const lb = document.getElementById('image-lightbox');
+        if (lb && !lb.classList.contains('hidden')) {
+          closeLightbox();
+        }
+      }
+    });
+
+    // 加载商品库模态框 (XSS 防御)
+    async function loadAllItemsModal() {
+      const container = document.getElementById('items-modal-list');
+      try {
+        const res = await fetch('/api/items');
+        const items = await res.json();
+        if (items.length === 0) {
+          container.innerHTML = `<div class="text-slate-500 text-center py-8">暂未同步商品，会话咨询进线时将自动收录</div>`;
+          return;
+        }
+
+        container.innerHTML = items.map(item => `
+          <div class="py-3 flex items-center justify-between">
+            <div class="space-y-1 max-w-[70%]">
+              <div class="font-medium text-slate-200 text-xs truncate">${escapeHtml(item.title)}</div>
+              <div class="text-[11px] text-slate-400">挂牌价: <span class="text-amber-400 font-bold">¥${item.price}</span> | 守价底线: <span class="text-emerald-400 font-bold">¥${item.min_price}</span></div>
+            </div>
+            <button onclick="closeModal('items-modal'); fetchItemDetail('${escapeHtml(item.item_id)}')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs transition">编辑策略</button>
+          </div>
+        `).join('');
+      } catch (e) {}
+    }
+
+    // ==========================================
+    // RAG 问答知识库交互逻辑 (XSS 防御)
+    // ==========================================
+    async function loadFaqsModal() {
+      const container = document.getElementById('faq-modal-list');
+      try {
+        const res = await fetch('/api/faqs');
+        const faqs = await res.json();
+        if (faqs.length === 0) {
+          container.innerHTML = `<div class="text-slate-500 text-center py-8">暂无问答条目，请在上方添加常见咨询答复</div>`;
+          return;
+        }
+
+        container.innerHTML = faqs.map(f => `
+          <div class="py-3 flex items-start justify-between space-x-3">
+            <div class="space-y-1 flex-1">
+              <div class="font-semibold text-slate-200 text-xs flex items-center space-x-1.5">
+                <span class="text-emerald-400 font-bold">Q:</span>
+                <span>${escapeHtml(f.question)}</span>
+              </div>
+              <div class="text-slate-300 text-[11px] bg-slate-950/60 p-2 rounded border border-slate-800">
+                <span class="text-indigo-400 font-bold">A:</span> ${escapeHtml(f.answer)}
+              </div>
+              ${f.keywords ? `<div class="text-[10px] text-slate-500"><i class="fa-solid fa-tags mr-1"></i>标签: ${escapeHtml(f.keywords)}</div>` : ''}
+            </div>
+            <button onclick="deleteFaq(${f.id})" class="text-slate-500 hover:text-rose-400 p-1.5 transition text-xs shrink-0" title="删除问答"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        `).join('');
+      } catch (e) {
+        container.innerHTML = `<div class="text-rose-400 text-center py-4">加载知识库失败</div>`;
+      }
+    }
+
+    async function addNewFaq() {
+      const q = document.getElementById('faq-new-q').value.trim();
+      const a = document.getElementById('faq-new-a').value.trim();
+      const kw = document.getElementById('faq-new-kw').value.trim();
+      if (!q || !a) {
+        alert("问题与答复内容不能为空");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/faqs', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({question: q, answer: a, keywords: kw})
+        });
+        if (res.ok) {
+          document.getElementById('faq-new-q').value = '';
+          document.getElementById('faq-new-a').value = '';
+          document.getElementById('faq-new-kw').value = '';
+          loadFaqsModal();
+        }
+      } catch (e) {
+        alert("添加失败: " + e);
+      }
+    }
+
+    async function deleteFaq(id) {
+      if (!confirm("确定删除该知识库条目吗？")) return;
+      try {
+        await fetch(`/api/faqs/${id}`, {method: 'DELETE'});
+        loadFaqsModal();
+      } catch (e) {}
+    }
+
+    // ==========================================
+    // 自动发货与履约规则交互逻辑 (XSS 防御)
+    // ==========================================
+    async function loadOrderRulesModal() {
+      const container = document.getElementById('order-rules-list');
+      try {
+        const res = await fetch('/api/order_rules');
+        const rules = await res.json();
+        if (rules.length === 0) {
+          container.innerHTML = `<div class="text-slate-500 text-center py-8">暂无发货履约规则，请在上方创建自动化规则</div>`;
+          return;
+        }
+
+        container.innerHTML = rules.map(r => `
+          <div class="py-3 flex items-start justify-between space-x-3">
+            <div class="space-y-1.5 flex-1">
+              <div class="flex items-center space-x-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.trigger_event === '等待卖家发货' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">
+                  ${escapeHtml(r.trigger_event)}
+                </span>
+                <span class="text-[11px] font-medium text-slate-300">自动发送下述内容:</span>
+              </div>
+              <div class="text-slate-300 text-[11px] bg-slate-950/80 p-2 rounded border border-slate-800 font-mono">
+                ${escapeHtml(r.auto_reply_text)}
+              </div>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0 pt-1">
+              <button onclick="toggleOrderRule(${r.id})" class="px-2.5 py-1 rounded text-xs font-semibold ${r.is_active ? 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}">
+                ${r.is_active ? '已启用' : '已暂停'}
+              </button>
+              <button onclick="deleteOrderRule(${r.id})" class="text-slate-500 hover:text-rose-400 p-1.5 transition text-xs"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        container.innerHTML = `<div class="text-rose-400 text-center py-4">加载规则失败</div>`;
+      }
+    }
+
+    async function addNewOrderRule() {
+      const evt = document.getElementById('rule-new-event').value;
+      const content = document.getElementById('rule-new-content').value.trim();
+      if (!content) {
+        alert("自动回复内容不能为空");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/order_rules', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({trigger_event: evt, auto_reply_text: content})
+        });
+        if (res.ok) {
+          document.getElementById('rule-new-content').value = '';
+          loadOrderRulesModal();
+        }
+      } catch (e) {
+        alert("添加失败: " + e);
+      }
+    }
+
+    async function toggleOrderRule(id) {
+      try {
+        await fetch(`/api/order_rules/${id}/toggle`, {method: 'POST'});
+        loadOrderRulesModal();
+      } catch (e) {}
+    }
+
+    async function deleteOrderRule(id) {
+      if (!confirm("确定删除该履约规则吗？")) return;
+      try {
+        await fetch(`/api/order_rules/${id}`, {method: 'DELETE'});
+        loadOrderRulesModal();
+      } catch (e) {}
+    }
+
+  </script>
+</body>
+</html>

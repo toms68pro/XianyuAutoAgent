@@ -1,31 +1,33 @@
-FROM python:3.10-alpine AS builder
+# ==========================================
+# 阶段 1: 依赖构建阶段
+# ==========================================
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
-# 只安装构建所需的依赖
-RUN apk add --no-cache --virtual .build-deps \
-    gcc \
-    musl-dev \
-    libffi-dev \
-    build-base
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# 创建虚拟环境并安装依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# 复制依赖文件并安装
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# 第二阶段：最终镜像
-FROM python:3.10-alpine
+# ==========================================
+# 阶段 2: 生产运行阶段
+# ==========================================
+FROM python:3.12-slim
 
-# 添加元数据标签
-LABEL maintainer="coderxiu<coderxiu@qq.com>"
-LABEL description="闲鱼AI客服机器人"
-LABEL version="2.0"
+LABEL maintainer="XianyuAutoAgent Team"
+LABEL description="闲鱼全自动客服与多账号矩阵协同系统 Pro 2.0"
+LABEL version="2.0.0"
 
-# 设置时区和编码
 ENV TZ=Asia/Shanghai \
     PYTHONIOENCODING=utf-8 \
     LANG=C.UTF-8 \
@@ -33,32 +35,26 @@ ENV TZ=Asia/Shanghai \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# 只安装运行时必要的包
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     tzdata \
+    curl \
     && ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && echo Asia/Shanghai > /etc/timezone \
-    # 清理apk缓存
-    && rm -rf /var/cache/apk/*
+    && rm -rf /var/lib/apt/lists/*
 
-# 设置工作目录
 WORKDIR /app
 
-# 从构建阶段复制虚拟环境
+# 从构建阶段继承依赖环境
 COPY --from=builder /opt/venv /opt/venv
 
-# 创建必要的目录
-RUN mkdir -p data prompts
+# 准备工作目录
+RUN mkdir -p data app/static
 
-# 复制示例提示词文件并重命名为正式文件
-COPY prompts/classify_prompt_example.txt prompts/classify_prompt.txt
-COPY prompts/price_prompt_example.txt prompts/price_prompt.txt
-COPY prompts/tech_prompt_example.txt prompts/tech_prompt.txt
-COPY prompts/default_prompt_example.txt prompts/default_prompt.txt
+# 复制现代化应用业务代码与启动脚本
+COPY app/ app/
+COPY run.py ./
 
-# 只复制绝对必要的文件
-COPY main.py XianyuAgent.py XianyuApis.py context_manager.py ./
-COPY utils/ utils/
+EXPOSE 8000
 
-# 容器启动时运行的命令
-CMD ["python", "main.py"]
+# 默认启动现代化 FastAPI 异步网关服务与 Web Copilot 工作台
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

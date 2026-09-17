@@ -1,5 +1,14 @@
-openai==1.65.5
-websockets==13.1
-loguru==0.7.3
-python-dotenv==1.0.1
-requests==2.32.3
+# Xianyu AutoAgent Pro 2.0 - 核心全异步与高并发生产技术栈依赖
+fastapi>=0.141.0
+uvicorn[standard]>=0.34.0
+pydantic>=2.13.0
+pydantic-settings>=2.15.0
+httpx>=0.28.1
+websockets>=15.0
+openai>=3.0.0
+sqlalchemy>=2.0.50
+aiosqlite>=0.22.0
+asyncpg>=0.31.0
+redis>=8.0.0
+loguru>=0.7.3
+python-dotenv>=1.2.0
